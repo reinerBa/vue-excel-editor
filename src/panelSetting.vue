@@ -19,7 +19,7 @@
         </div>
         <div>
           <div ref="panelList" class="panel-list">
-            <draggable v-model="fields" draggable=".panel-list-item">
+            <draggable v-model="fields" draggable=".panel-list-item" item-key="fields">
               <div v-for="(item, k) in fields" :key="k"
                    class="panel-list-item"
                    @click.prevent="columnLabelClick($event, item)">
@@ -53,7 +53,7 @@ export default {
     'draggable': draggable
   },
   props: {
-    value: Array,
+    modelValue: Array,
     localizedLabel: {
       type: Object,
       default () {
@@ -76,10 +76,10 @@ export default {
   computed: {
     fields: {
       get: function () {
-        return this.value
+        return this.modelValue
       },
       set: function (newVal) {
-        this.$emit('input', newVal)
+        this.$emit('update:modelValue', newVal)
       }
     }
   },

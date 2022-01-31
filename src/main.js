@@ -8,11 +8,5 @@ export default {
 
     Vue.component('vue-excel-editor', VueExcelEditor)
     Vue.component('vue-excel-column', VueExcelColumn)
-
-    Vue.mixin({
-      created() {
-        // do something you like
-      }
-    })
   }
 }

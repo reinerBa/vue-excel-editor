@@ -108,7 +108,7 @@
                   @click="rowLabelClick">
                 <span v-html="recordLabel(pageTop + rowPos + 1, record)"></span>
               </td>
-              <template v-for="(item, p) in fields">
+              <template v-for="(item, p) in fields" :key="p">
                 <td v-show="!item.invisible"
                     :id="`id-${record.$id}-${item.name}`"
                     :cell-RC="`${rowPos}-${item.name}`"
@@ -121,7 +121,6 @@
                       'sticky-column': item.sticky
                     }"
                     :style="Object.assign(cellStyle(record, item), renderColumnCellStyle(item))"
-                    :key="p"
                     @mouseover="cellMouseOver"
                     @mousemove="cellMouseMove">{{ item.toText(record[item.name]) }}</td>
               </template>
@@ -131,7 +130,7 @@
           <tfoot>
             <tr v-show="pagingTable.length && summaryRow">
               <td class="row-summary first-col">&nbsp;</td>
-              <template v-for="(field, p) in fields">
+              <template v-for="(field, p) in fields" :key="`f${p}`">
                 <td v-show="!field.invisible"
                     class="row-summary"
                     :colspan="p === fields.length - 1 && vScroller.buttonHeight < vScroller.height ? 2: 1"
@@ -141,7 +140,7 @@
                       'summary-column2': field.summary
                     }"
                     :style="renderColumnCellStyle(field)"
-                    :key="`f${p}`">{{ summary[field.name] }}</td>
+                    >{{ summary[field.name] }}</td>
               </template>
             </tr>
           </tfoot>
@@ -276,12 +275,11 @@
 </template>
 
 <script>
-import Vue from 'vue'
 import VueExcelFilter from './VueExcelFilter.vue'
-import PanelFilter from './PanelFilter.vue'
-import PanelSetting from './PanelSetting.vue'
-import PanelFind from './PanelFind.vue'
-import DatePicker from 'vue2-datepicker'
+import PanelFilter from './panelFilter.vue'
+import PanelSetting from './panelSetting.vue'
+import PanelFind from './panelFind.vue'
+import DatePicker from 'vue3-datepicker'
 import XLSX from 'xlsx'
 
 import 'vue2-datepicker/index.css'
@@ -307,7 +305,7 @@ export default {
         return false;
       }
     },
-    value: {type: Array, default () {return []}},
+    modelValue: {type: Array, default () {return []}},
     rowStyle: {type: Function, default () {return {}}},
     cellStyle: {type: Function, default () {return {}}},
     headerLabel: {
@@ -462,7 +460,7 @@ export default {
       leftMost: 0,
 
       showDatePicker: false,
-      inputDateTime: '',
+      inputDateTime: new Date(),
 
       table: [],
       filteredValue: [],
@@ -520,7 +518,7 @@ export default {
     }
   },
   watch: {
-    value () {
+    modelValue () {
       this.lazy(() => {
         this.refresh()
         if (this.pageTop > this.table.length)
@@ -562,7 +560,7 @@ export default {
       this.$emit('page-changed', this.pageTop, this.pageTop + newVal - 1)
     }
   },
-  beforeDestroy () {
+  beforeUnmount () {
     window.removeEventListener('resize', this.winResize)
     window.removeEventListener('paste', this.winPaste)
     window.removeEventListener('keydown', this.winKeydown)
@@ -740,8 +738,8 @@ export default {
     refresh () {
       // this.pageTop = 0
       this.prevSelect = -1
-      if (this.fields.length === 0 && this.value.length && Object.keys(this.value[0])) {
-        this.autoRegisterAllColumns(this.value)
+      if (this.fields.length === 0 && this.modelValue.length && Object.keys(this.modelValue[0])) {
+        this.autoRegisterAllColumns(this.modelValue)
       }
       this.calTable()
       this.refreshPageSize()
@@ -749,12 +747,12 @@ export default {
     calTable () {
       // add unique key to each row if no key is provided
       let seed = String(new Date().getTime() % 1e8)
-      this.value.forEach((rec,i) => {
+      this.modelValue.forEach((rec,i) => {
         if (!rec.$id) rec.$id = seed + '-' + ('000000' + i).slice(-7)
       })
 
       if (this.showFilteredOnly === false) {
-        this.table = this.value
+        this.table = this.modelValue
       }
       else {
         const filterColumnList = Object.keys(this.columnFilter)
@@ -762,48 +760,48 @@ export default {
         filterColumnList.forEach((k) => {
           switch (true) {
             case this.columnFilter[k].startsWith('<='):
-              filter[k] = {type: 1, value: this.columnFilter[k].slice(2).trim().toUpperCase()}
-              if (this.fields[k].type === 'number') filter[k].value = Number(filter[k].value)
+              filter[k] = {type: 1, modelValue: this.columnFilter[k].slice(2).trim().toUpperCase()}
+              if (this.fields[k].type === 'number') filter[k].modelValue = Number(filter[k].modelValue)
               break
             case this.columnFilter[k].startsWith('<>'):
-              filter[k] = {type: 9, value: this.columnFilter[k].slice(2).trim().toUpperCase()}
+              filter[k] = {type: 9, modelValue: this.columnFilter[k].slice(2).trim().toUpperCase()}
               break
             case this.columnFilter[k].startsWith('<'):
-              filter[k] = {type: 2, value: this.columnFilter[k].slice(1).trim().toUpperCase()}
-              if (this.fields[k].type === 'number') filter[k].value = Number(filter[k].value)
+              filter[k] = {type: 2, modelValue: this.columnFilter[k].slice(1).trim().toUpperCase()}
+              if (this.fields[k].type === 'number') filter[k].modelValue = Number(filter[k].modelValue)
               break
             case this.columnFilter[k].startsWith('>='):
-              filter[k] = {type: 3, value: this.columnFilter[k].slice(2).trim().toUpperCase()}
-              if (this.fields[k].type === 'number') filter[k].value = Number(filter[k].value)
+              filter[k] = {type: 3, modelValue: this.columnFilter[k].slice(2).trim().toUpperCase()}
+              if (this.fields[k].type === 'number') filter[k].modelValue = Number(filter[k].modelValue)
               break
             case this.columnFilter[k].startsWith('>'):
-              filter[k] = {type: 4, value: this.columnFilter[k].slice(1).trim().toUpperCase()}
-              if (this.fields[k].type === 'number') filter[k].value = Number(filter[k].value)
+              filter[k] = {type: 4, modelValue: this.columnFilter[k].slice(1).trim().toUpperCase()}
+              if (this.fields[k].type === 'number') filter[k].modelValue = Number(filter[k].modelValue)
               break
             case this.columnFilter[k].startsWith('='):
-              filter[k] = {type: 0, value: this.columnFilter[k].slice(1).trim().toUpperCase()}
+              filter[k] = {type: 0, modelValue: this.columnFilter[k].slice(1).trim().toUpperCase()}
               break
             case this.columnFilter[k].startsWith('*') && this.columnFilter[k].endsWith('*'):
-              filter[k] = {type: 5, value: this.columnFilter[k].slice(1).slice(0, -1).trim().toUpperCase()}
+              filter[k] = {type: 5, modelValue: this.columnFilter[k].slice(1).slice(0, -1).trim().toUpperCase()}
               break
             case this.columnFilter[k].startsWith('*') && !this.columnFilter[k].slice(1).includes('*'):
-              filter[k] = {type: 6, value: this.columnFilter[k].slice(1).trim().toUpperCase()}
+              filter[k] = {type: 6, modelValue: this.columnFilter[k].slice(1).trim().toUpperCase()}
               break
             case this.columnFilter[k].startsWith('~'):
-              filter[k] = {type: 8, value: this.columnFilter[k].slice(1).trim()}
+              filter[k] = {type: 8, modelValue: this.columnFilter[k].slice(1).trim()}
               break
             case this.columnFilter[k].endsWith('*') && !this.columnFilter[k].slice(0, -1).includes('*'):
-              filter[k] = {type: 7, value: this.columnFilter[k].slice(0, -1).trim().toUpperCase()}
+              filter[k] = {type: 7, modelValue: this.columnFilter[k].slice(0, -1).trim().toUpperCase()}
               break
             case this.columnFilter[k].includes('*') || this.columnFilter[k].includes('?'):
-              filter[k] = {type: 8, value: '^' + this.columnFilter[k].replace(/\*/g, '.*').replace(/\?/g, '.').trim() + '$'}
+              filter[k] = {type: 8, modelValue: '^' + this.columnFilter[k].replace(/\*/g, '.*').replace(/\?/g, '.').trim() + '$'}
               break
             default:
-              filter[k] = {type: 5, value: this.columnFilter[k].trim().toUpperCase()}
+              filter[k] = {type: 5, modelValue: this.columnFilter[k].trim().toUpperCase()}
               break
           }
         })
-        this.filteredValue = this.value.filter(record => this.recordFilter(record))
+        this.filteredValue = this.modelValue.filter(record => this.recordFilter(record))
         if (filterColumnList.length === 0)
           this.table = this.filteredValue
         else {
@@ -833,34 +831,34 @@ export default {
               const k = filterColumnList[i]
               switch (filter[k].type) {
                 case 0:
-                  if (`${content[k]}` !== `${filter[k].value}`) return false
+                  if (`${content[k]}` !== `${filter[k].modelValue}`) return false
                   break
                 case 1:
-                  if (filter[k].value < content[k]) return false
+                  if (filter[k].modelValue < content[k]) return false
                   break
                 case 2:
-                  if (filter[k].value <= content[k]) return false
+                  if (filter[k].modelValue <= content[k]) return false
                   break
                 case 3:
-                  if (filter[k].value > content[k]) return false
+                  if (filter[k].modelValue > content[k]) return false
                   break
                 case 4:
-                  if (filter[k].value >= content[k]) return false
+                  if (filter[k].modelValue >= content[k]) return false
                   break
                 case 5:
-                  if (!content[k].includes(filter[k].value)) return false
+                  if (!content[k].includes(filter[k].modelValue)) return false
                   break
                 case 6:
-                  if (!content[k].endsWith(filter[k].value)) return false
+                  if (!content[k].endsWith(filter[k].modelValue)) return false
                   break
                 case 7:
-                  if (!content[k].startsWith(filter[k].value)) return false
+                  if (!content[k].startsWith(filter[k].modelValue)) return false
                   break
                 case 8:
-                  if (!new RegExp(filter[k].value, 'i').test(content[k])) return false
+                  if (!new RegExp(filter[k].modelValue, 'i').test(content[k])) return false
                   break
                 case 9:
-                  if (`${content[k]}` === `${filter[k].value}`) return false
+                  if (`${content[k]}` === `${filter[k].modelValue}`) return false
                   break
               }
             }
@@ -991,7 +989,7 @@ export default {
     setFilter(name, filterText) {
       const ref = this.$refs[`filter-${name}`][0]
       ref.$el.textContent = filterText
-      ref.$emit('input', filterText)
+      ref.$emit('update:modelValue', filterText)
     },
     
     clearFilter(name) {
@@ -1627,7 +1625,7 @@ export default {
                 return String(a[name]).localeCompare(String(b[name]))
               }
         }
-        this.value.sort((a, b) => {
+        this.modelValue.sort((a, b) => {
           return sorting(a, b) * -n
         })
         this.sortPos = colPos
@@ -1903,12 +1901,12 @@ export default {
           }
           finally {
             this.processing = false
-            this.$refs.importFile.value = ''
+            this.$refs.importFile.modelValue = ''
           }
         }
         fileReader.onerror = (e) => {
           this.processing = false
-          this.$refs.importFile.value = ''
+          this.$refs.importFile.modelValue = ''
           if (this.importErrorCallback) this.importErrorCallback(e.message)
           throw new Error('VueExcelEditor: ' + e.stack)
         }
@@ -2396,7 +2394,7 @@ export default {
           }
           else if (t.field && t.field.keyField && t.oldKeys.includes(t.newVal)) {
             // newRecord() transaction
-            const valueRowPos = this.value.findIndex(v => v.$id === t.$id)
+            const valueRowPos = this.modelValue.findIndex(v => v.$id === t.$id)
             if (valueRowPos >= 0) {
               this.deleteRecord(valueRowPos, true)
               // return false
@@ -2424,7 +2422,7 @@ export default {
       })
       const id = rec.$id || this.tempKey()
       rec.$id = id
-      this.value.push(rec)
+      this.modelValue.push(rec)
       const rowPos = this.table.push(rec) - 1
       if (selectAfterDone) this.selected[rowPos] = id
       Object.keys(rec).forEach(name => {
@@ -2440,7 +2438,7 @@ export default {
     },
     deleteSelectedRecords () {
       Object.values(this.selected).forEach((id) => {
-        const valueRowPos = this.value.findIndex(v => v.$id === id)
+        const valueRowPos = this.modelValue.findIndex(v => v.$id === id)
         if (valueRowPos >= 0) this.deleteRecord(valueRowPos)
       })
       this.selected = {}
@@ -2448,7 +2446,7 @@ export default {
     },
     deleteRecord (valueRowPos, isUndo) {
       if (this.currentRowPos === valueRowPos) this.moveNorth()
-      const rec = this.value.splice(valueRowPos, 1)[0]
+      const rec = this.modelValue.splice(valueRowPos, 1)[0]
       setTimeout(() => {
         this.lazy(rec, (buf) => {
           this.$emit('delete', buf)
@@ -2462,7 +2460,7 @@ export default {
     async updateCell (row, field, newVal, isUndo) {
       switch(row.constructor.name) {
         case 'String': // $id
-          row = this.value.find(r => r.$id === row) // id
+          row = this.modelValue.find(r => r.$id === row) // id
           break
         case 'Number':
           row = this.table[row] // tablePos
@@ -2605,8 +2603,8 @@ export default {
             }
           }
           else {
-            for(let i=0; i<this.value.length; i++) {
-              const rec = this.value[i]
+            for(let i=0; i<this.modelValue.length; i++) {
+              const rec = this.modelValue[i]
               if (typeof rec[name] !== 'undefined' && rec[name].toString().toUpperCase().startsWith(value) && list.indexOf(rec[name]) === -1)
                 list.push(rec[name])
               if (list.length >= listCount) break
@@ -2685,7 +2683,7 @@ export default {
 
       if (this.lazyTimeout[hash]) clearTimeout(this.lazyTimeout[hash])
       this.lazyTimeout[hash] = setTimeout(() => {
-        Vue.nextTick(() => {
+        this.$nextTick(() => {
           p(this.lazyBuffer[hash])
           delete this.lazyTimeout[hash]
           delete this.lazyBuffer[hash]

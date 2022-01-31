@@ -164,19 +164,19 @@ export default {
     doInputFilter () {
       if (window.delay) clearTimeout(window.delay)
       window.delay = setTimeout(() => {
-        this.inputFilter = this.$refs.inputFilter.value
+        this.inputFilter = this.$refs.inputFilter.modelValue
       }, 200)
     },
     doFilter () {
-      const opt = this.inputFilterCondition + this.$refs.inputFilter.value
+      const opt = this.inputFilterCondition + this.$refs.inputFilter.modelValue
       this.columnFilterRef.$el.textContent = opt
-      this.columnFilterRef.$emit('input', opt)
+      this.columnFilterRef.$emit('update:modelValue', opt)
       this.hidePanel()
     },
     filterPanelSelect (opt) {
       // this.columnFilter[this.columnFilterRef.colPos] = el  // Cannot use this, dunno why
       this.columnFilterRef.$el.textContent = '=' + opt
-      this.columnFilterRef.$emit('input', '=' + opt)
+      this.columnFilterRef.$emit('update:modelValue', '=' + opt)
       this.hidePanel()
     },
     showPanel (ref) {
@@ -184,10 +184,10 @@ export default {
       this.inputFilter = ''
       this.inputFilterCondition = ''
       this.sortedUniqueValueList = []
-      this.$refs.inputFilter.value = ''
+      this.$refs.inputFilter.modelValue = ''
       if (this.columnFilterRef.$el.textContent != '') {
         this.columnFilterRef.$el.textContent = ''
-        this.columnFilterRef.$emit('input', '')
+        this.columnFilterRef.$emit('update:modelValue', '')
         this.$parent.calTable()
       }
       setTimeout(() => {

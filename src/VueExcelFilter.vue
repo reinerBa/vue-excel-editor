@@ -12,10 +12,10 @@
     v-on="listeners"
     @focus="onFocus"
     @blur="onBlur"
-    @keydown.exact.37="keyWest"
-    @keydown.exact.39="keyEast"
-    @keydown.exact.enter="keyEnter"
-    @keyup.exact.delete="keyDelete"
+    @keydown.left.exact="keyWest"
+    @keydown.right.exact="keyEast"
+    @keydown.enter.exact="keyEnter"
+    @keyup.delete.exact="keyDelete"
     @mousemove="mouseMove"
     @mousedown="mouseDown" />
 </template>
@@ -23,7 +23,7 @@
 <script>
 export default {
   props: {
-    value: {type: String, default: ''},
+    modelValue: {type: String, default: ''},
     interactive: {type: Boolean, default: false}
   },
   data () {
@@ -39,12 +39,12 @@ export default {
   computed: {
     listeners () {
       return {
-        ...this.$listeners, input: this.onInput
+        ...this.$attrs, input: this.onInput
       }
     },
     err () {
       if (this.validate)
-        return this.validate(this.value)
+        return this.validate(this.modelValue)
       return ''
     },
     filterRowTop () {
@@ -53,7 +53,7 @@ export default {
     },
   },
   watch: {
-    value (newVal) {
+    modelValue (newVal) {
       if (newVal !== this.$el.textContent)
         this.$refs.cell.textContent = newVal
     }
@@ -64,7 +64,7 @@ export default {
 
     // Convert the value into html
     this.cell = this.$refs.cell
-    this.cell.textContent = this.value
+    this.cell.textContent = this.modelValue
 
     // Store the DOM neighbour
     this.row = this.cell.parentNode
@@ -75,8 +75,8 @@ export default {
   methods: {
     updateValue (e) {
       const content = e.target.textContent
-      if (this.value !== content)
-        this.$emit('input', content)
+      if (this.modelValue !== content)
+        this.$emit('update:modelValue', content)
     },
     onInput (e) {
       if (this.interactive)
